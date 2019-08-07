@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os
 import argparse
 import urllib.request
 from bs4 import BeautifulSoup
@@ -31,6 +32,7 @@ def main():
     parser.add_argument('-y', '--year', type=int, help='year')
     parser.add_argument('-n', '--number', type=int,
                         help='number (in the proceedings)')
+    parser.add_argument('-ot', '--outtype', help='output type {''bib'',''txt''')
     parser.add_argument('-l', '--link', help='abstract link')
     parser.add_argument('-w', '--write', help='write to file')
     parser.add_argument('-wd', '--write-default', action='store_true')
@@ -49,7 +51,10 @@ def main():
 
     print(link)
     abstractDict = getAbstractDictFromUrl(link)
-    bibtex_str = getBibtexStrFromAbstractDict(abstractDict)
+    if (args.outtype == 'txt'):
+        write_str = getTextStrFromAbstractDict(abstractDict)
+    else:
+        write_str = getBibtexStrFromAbstractDict(abstractDict)
 
     if args.write:
         filename = args.write
@@ -66,10 +71,10 @@ def main():
 
     if filemode and filename:
         with open(filename, filemode) as f:
-            f.write(bibtex_str)
+            f.write(write_str)
         print('Wrote bibtex entry to file {}.'.format(filename))
     else:
-        print(bibtex_str, end='')
+        print(write_str, end='')
 
     return 0
 
@@ -168,6 +173,34 @@ def getAbstractUrl(year, abstractNumber):
     abstractNumberStr = (4 - len(abstractNumberStr)) * '0' + abstractNumberStr
     return BASEURL + str(year) + '/' + abstractNumberStr + '.html'
 
+
+def getTextStrFromAbstractDict(abstractDict):
+    str = ""
+    str = str + abstractDict.get('title')[1:-1] + os.linesep # get title and remove enclosing brackets {}
+
+    authors = abstractDict.get('author')
+    authors = authors.replace(' and', ',').rstrip(',') # strip bibtex "and" and trailing commas
+    authors = authors.split(', ')
+    authorsShort = ""
+    for author in authors:
+        authorParts = author.split(' ')
+        author = authorParts[0][0]
+        for authorPart in authorParts[1:]:
+            if len(authorPart) > 1:
+                author = " " + author
+                author = authorPart + author
+            else:
+                author = author + authorPart
+        authorsShort = authorsShort + author + ", "
+        print(author)
+    str = str + authorsShort.rstrip(',') + os.linesep
+
+    str = str + abstractDict.get('booktitle')
+    str = str + " (" + abstractDict.get('address') + ")"
+    str = str + ', ' + abstractDict.get('year')
+    str = str + ', #' + abstractDict.get('pages')  
+
+    return str + os.linesep
 
 def getBibtexStrFromAbstractDict(abstractDict):
     abstractDict.pop('url')
