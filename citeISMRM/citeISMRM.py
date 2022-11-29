@@ -86,7 +86,6 @@ def getAbstractDictFromUrl(url):
             dictList.append(getAbstractDictFromUrl(u))
         return dictList
     else:
-        print(url)
         html = urllib.request.urlopen(url).read()
         soup = BeautifulSoup(html, 'lxml')
         year = url.split('/')[-2]
